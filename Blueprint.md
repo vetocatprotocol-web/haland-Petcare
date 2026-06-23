@@ -1,407 +1,357 @@
-HALAND PETCARE v2.0
+HALAND PETCARE v2.1
 
-COMPLETE SYSTEM BLUEPRINT
+SINGLE SOURCE OF TRUTH (SSOT)
 
-Version: 2.0
+Version: 2.1
 
 Status: Production Architecture
 
 Architecture: Local-First Clinic Operating System
 
+Last Updated: 2026-06-23
 
 ---
 
-1. PROJECT OVERVIEW
+1. PURPOSE
 
+Haland PetCare adalah Clinic Operating System untuk klinik hewan yang dibangun menggunakan arsitektur Local-First.
 
+Tujuan utama sistem:
 
-Haland PetCare adalah Clinic Operating System untuk klinik hewan yang dirancang dengan arsitektur Full Offline Local-First.
-
-Seluruh operasional klinik harus tetap berjalan walaupun internet tidak tersedia.
-
-Internet hanya digunakan untuk:
-
-Sinkronisasi data
-
-Backup cloud
-
-Multi-device replication
-
-Remote access
-
-
-Cloud bukan sumber data utama.
-
-Database lokal adalah sumber data utama.
-
+- Seluruh operasional klinik tetap berjalan tanpa internet.
+- Cloud bukan sumber data utama.
+- Database lokal adalah sumber data utama.
+- Seluruh fitur wajib mendukung mode offline.
+- Sinkronisasi dilakukan ketika koneksi tersedia.
 
 ---
 
-2. CORE PRINCIPLES
+2. NON-NEGOTIABLE RULES
 
+Seluruh pengembangan wajib mematuhi aturan berikut.
 
+RULE 01
 
-Principle 1
+Local Database Is Source Of Truth.
 
-Local Database First
+Tidak boleh ada fitur yang langsung bergantung pada cloud.
 
 Semua operasi:
 
-CREATE
-READ
-UPDATE
-DELETE
+- Create
+- Read
+- Update
+- Delete
 
 harus dilakukan ke database lokal terlebih dahulu.
 
-
 ---
 
-Principle 2
+RULE 02
 
-Cloud As Replication Layer
+Cloud Is Replication Layer.
 
 Cloud hanya digunakan untuk:
 
-Backup
-
-Sync
-
-Monitoring
-
+- Backup
+- Synchronization
+- Monitoring
+- Remote Access
 
 Cloud tidak boleh menjadi dependency operasional.
 
+---
+
+RULE 03
+
+Offline Must Always Work.
+
+Jika internet mati:
+
+- Login tetap berjalan
+- POS tetap berjalan
+- Queue tetap berjalan
+- Medical Record tetap berjalan
+- Inventory tetap berjalan
+- Hospitalization tetap berjalan
 
 ---
 
-Principle 3
+RULE 04
 
-Offline Must Work
+Every Important Action Must Be Audited.
 
-Semua fitur wajib berjalan tanpa internet.
-
-Tidak ada fitur yang bergantung pada koneksi internet.
-
+Tidak boleh ada perubahan data penting tanpa audit log.
 
 ---
 
-Principle 4
+RULE 05
 
-Role-Based Security
+No Hard Delete.
 
-Semua akses berdasarkan role.
-
-Owner
-Doctor
-Staff
-Customer
-
+Semua data operasional menggunakan soft delete.
 
 ---
 
-Principle 5
+RULE 06
 
-Audit Everything
+Security First.
 
-Semua perubahan penting harus tercatat.
+Seluruh endpoint:
 
+- Authentication Protected
+- Role Protected
+- Audit Logged
 
 ---
 
 3. SYSTEM ARCHITECTURE
 
-
-
-┌──────────────────────┐
-│ Next.js PWA Client   │
-└──────────┬───────────┘
-│
-▼
-┌──────────────────────┐
-│ Application Layer    │
-│ Services             │
-│ Validation           │
-│ Business Rules       │
-└──────────┬───────────┘
-│
-▼
-┌──────────────────────┐
-│ PGlite Local DB      │
-│ Primary Database     │
-└──────────┬───────────┘
-│
-▼
-┌──────────────────────┐
-│ Sync Queue           │
-│ Background Sync      │
-└──────────┬───────────┘
-│
-▼
-┌──────────────────────┐
-│ Supabase PostgreSQL  │
-│ Backup & Replication │
-└──────────────────────┘
-
+Next.js PWA
+      │
+      ▼
+Application Core
+      │
+      ▼
+PGlite Local Database
+      │
+ ┌────┼────┐
+ │    │    │
+ ▼    ▼    ▼
+Audit Backup Sync
+ │    │    │
+ └────┼────┘
+      ▼
+Replication Engine
+      │
+      ▼
+Supabase PostgreSQL
 
 ---
 
-4. ROLE HIERARCHY
+4. PRIMARY TECHNOLOGY STACK
 
+Frontend:
 
+- Next.js 15
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
 
-OWNER
+Offline Layer:
 
-├── STAFF
-│    └── CUSTOMER
-│
-├── DOCTOR
-│
-└── CUSTOMER
+- PWA
+- Service Worker
+- IndexedDB
+- Background Sync
 
+Local Database:
+
+- PGlite
+
+Cloud Database:
+
+- Supabase PostgreSQL
+
+ORM:
+
+- Drizzle ORM
+
+Validation:
+
+- Zod
+
+State Management:
+
+- Zustand
+
+Authentication:
+
+- Local Authentication
+- Supabase Replication
+
+Deployment:
+
+- Vercel
 
 ---
 
-5. USER CREATION RULES
-
-
+5. USER ROLES
 
 OWNER
 
-Can Create:
+Full Access
 
-owner
+Can:
 
-doctor
-
-staff
-
-customer
-
-
-Can Edit:
-
-all users
-
-
-Can Disable:
-
-all users
-
-
+- Create Owner
+- Create Doctor
+- Create Staff
+- Create Customer
+- Disable User
+- Reset Password
+- Access Reports
+- Access Settings
 
 ---
 
 STAFF
 
-Can Create:
+Can:
 
-customer
+- Create Customer
+- Create Pet
+- Manage Queue
+- Manage Appointment
+- POS
+- Inventory
 
+Cannot:
 
-Cannot Create:
-
-owner
-
-doctor
-
-staff
-
-
-Cannot Change Roles
-
+- Create Staff
+- Create Doctor
+- Create Owner
 
 ---
 
 DOCTOR
 
-Cannot Create Users
+Can:
 
-Cannot Edit Users
+- View Queue
+- Create Medical Record
+- Create Prescription
+- Manage Hospitalization
+- Discharge Patient
 
+Cannot:
+
+- Create User
+- Modify Inventory
 
 ---
 
 CUSTOMER
 
-Cannot Create Users
+Can:
 
-Cannot Edit Users
+- View Own Pets
+- View Medical Records
+- View Appointments
+- Create Appointments
 
+Cannot:
+
+- Access Internal Data
 
 ---
 
-6. OWNER WORKFLOW
+6. USER CREATION POLICY
 
+Owner:
 
+Create:
+
+- Owner
+- Doctor
+- Staff
+- Customer
+
+Staff:
+
+Create:
+
+- Customer
+
+Doctor:
+
+No User Creation
+
+Customer:
+
+No User Creation
+
+---
+
+7. AUTHENTICATION ARCHITECTURE
+
+Offline authentication is mandatory.
+
+Tables:
+
+local_users
+
+local_sessions
+
+Authentication flow:
 
 Login
 ↓
-Owner Dashboard
-
-Dashboard:
-
-Revenue Today
-
-Revenue This Month
-
-Total Patients
-
-Active Queue
-
-Active Hospitalization
-
-Inventory Alerts
-
-Top Services
-
-Top Medicines
-
-
+Local User Lookup
 ↓
-
-Reports
-
+Password Verification
 ↓
-
-User Management
-
+Local Session Creation
 ↓
+Access Granted
 
-System Monitoring
-
+Internet is not required.
 
 ---
 
-7. STAFF WORKFLOW
+8. DATABASE PRINCIPLE
 
+Primary Database:
 
+haland_local
 
-Login
-↓
-Staff Dashboard
+Engine:
 
-Dashboard:
+PGlite
 
-Waiting Queue
+Source Of Truth:
 
-Today's Appointments
+YES
 
-Unpaid Transactions
+Cloud Database:
 
-Low Stock Alerts
+Supabase PostgreSQL
 
+Source Of Truth:
 
-↓
+NO
 
-Customer Registration
+Purpose:
 
-↓
-
-Pet Registration
-
-↓
-
-Appointment Management
-
-↓
-
-Queue Management
-
-↓
-
-POS
-
-↓
-
-Inventory
-
+Replication Only
 
 ---
 
-8. DOCTOR WORKFLOW
+9. MODULES
 
+Mandatory Modules:
 
-
-Login
-↓
-Doctor Dashboard
-
-Dashboard:
-
-Today's Patients
-
-Active Queue
-
-Active Hospitalization
-
-Follow Ups
-
-
-↓
-
-Queue
-
-↓
-
-Medical Examination
-
-↓
-
-Medical Record
-
-↓
-
-Prescription
-
-↓
-
-Hospitalization Decision
-
-↓
-
-Discharge
-
+- Authentication
+- User Management
+- Customers
+- Pets
+- Appointments
+- Queue
+- Medical Records
+- Prescriptions
+- Hospitalization
+- Inventory
+- POS
+- Reports
+- Audit Logs
+- Sync Engine
+- Backup Engine
+- Notifications
 
 ---
 
-9. CUSTOMER WORKFLOW
-
-
-
-Login
-↓
-Customer Dashboard
-
-Dashboard:
-
-My Pets
-
-Appointments
-
-Medical History
-
-Hospitalization Status
-
-
-↓
-
-View Pet
-
-↓
-
-View Medical Records
-
-↓
-
-Create Appointment
-
-
----
-
-10. WALK-IN FLOW
-
-
+10. WALK-IN WORKFLOW
 
 Customer Arrives
 ↓
@@ -420,184 +370,157 @@ Create Customer
 Create Pet
 
 ↓
-
 Create Queue
-
 ↓
-
-Status = WAITING
-
+WAITING
 ↓
-
-Doctor Calls Patient
-
+Doctor Examination
 ↓
-
-Status = IN_PROGRESS
-
+Medical Record
 ↓
-
-Medical Examination
-
-↓
-
-Medical Record Created
-
-↓
-
 Decision
 
 OUTPATIENT
 or
 HOSPITALIZATION
 
-
 ---
 
-11. OUTPATIENT FLOW
+11. APPOINTMENT WORKFLOW
 
-
-
-Medical Record Saved
+Appointment
 ↓
-Queue DONE
-↓
-Generate Transaction
-↓
-POS
-↓
-Payment
-↓
-Inventory Reduction
-↓
-Invoice
-↓
-Completed
-
-
----
-
-12. HOSPITALIZATION FLOW
-
-
-
-Medical Record
-↓
-Select Empty Cage
-↓
-Create Hospitalization
-↓
-Cage Occupied
-↓
-Daily Monitoring
-↓
-Doctor Discharge
-↓
-Release Cage
-↓
-Generate Transaction
-↓
-POS
-↓
-Completed
-
-
----
-
-13. APPOINTMENT FLOW
-
-
-
-Create Appointment
-↓
-Status PENDING
+PENDING
 ↓
 Staff Confirmation
 ↓
-Status CONFIRMED
+CONFIRMED
 ↓
-Patient Arrives
+Arrival
 ↓
 Convert To Queue
 ↓
 Walk-In Flow
 
+---
+
+12. HOSPITALIZATION WORKFLOW
+
+Medical Record
+↓
+Select Cage
+↓
+Hospitalization
+↓
+Daily Monitoring
+↓
+Doctor Approval
+↓
+Discharge
+↓
+Release Cage
+↓
+POS
+↓
+Completed
 
 ---
 
-14. OFFLINE ARCHITECTURE
+13. INVENTORY RULES
 
+Stock Reduction Only After Payment.
 
+Must Use Database Transaction.
 
-All Modules Must Work Offline
+Must Prevent:
 
-Supported:
+- Double Deduction
+- Race Condition
+- Negative Stock
 
-✓ Login
+Medicine Must Support:
 
-✓ Customers
-
-✓ Pets
-
-✓ Queue
-
-✓ Appointment
-
-✓ Medical Records
-
-✓ Hospitalization
-
-✓ Inventory
-
-✓ POS
-
-✓ Reports
-
+- Batch Number
+- Expired Date
 
 ---
 
-15. LOCAL DATABASE
+14. CAGE MANAGEMENT
 
+Tables:
 
+cages
 
-Engine:
+Fields:
 
-PGlite
+- id
+- code
+- size
+- status
+- notes
 
-Database:
+Status:
 
-haland_local
-
-Local Database Is Primary Source Of Truth
-
+- AVAILABLE
+- OCCUPIED
+- MAINTENANCE
 
 ---
 
-16. CLOUD DATABASE
+15. AUDIT SYSTEM
 
+Every Important Action Must Be Logged.
 
+audit_logs
 
-Provider:
+Fields:
 
-Supabase
+- id
+- user_id
+- action
+- table_name
+- record_id
+- old_data
+- new_data
+- created_at
 
-Purpose:
+Actions:
 
-Backup
+- INSERT
+- UPDATE
+- DELETE
+- LOGIN
+- LOGOUT
+- PAYMENT
+- DISCHARGE
+- CREATE_USER
+- RESET_PASSWORD
 
-Sync
+---
 
-Replication
+16. BACKUP ENGINE
 
+Automatic Backup:
 
-Cloud Is Secondary
+- Daily
+- Weekly
 
+Manual Backup:
+
+- Supported
+
+Restore:
+
+- Supported
+
+Backup Target:
+
+- Local File
+- Supabase Storage
 
 ---
 
 17. SYNC ENGINE
-
-
 
 Every Change:
 
@@ -611,7 +534,7 @@ Stored Locally
 
 ↓
 
-Added To Sync Queue
+Added To Queue
 
 ↓
 
@@ -619,400 +542,194 @@ Background Sync
 
 ↓
 
-Supabase
-
+Cloud Replication
 
 ---
 
-18. SYNC QUEUE STRUCTURE
-
-
+18. SYNC QUEUE
 
 sync_queue
 
-id
+Fields:
 
-table_name
-
-record_id
-
-operation
-
-payload
-
-created_at
-
-synced
-
-retry_count
-
-last_attempt_at
-
+- id
+- device_id
+- clinic_id
+- table_name
+- record_id
+- operation
+- payload
+- entity_version
+- checksum
+- synced
+- retry_count
+- last_attempt_at
 
 ---
 
-19. CONFLICT MANAGEMENT
-
-
-
-Strategy:
-
-Server Wins + Conflict Log
+19. CONFLICT RESOLUTION
 
 Never:
 
 Last Write Wins
 
+Strategy:
+
+Merge First
+
+If Conflict:
+
+Create Conflict Entry
+
+conflict_queue
+
+Fields:
+
+- id
+- table_name
+- record_id
+- local_version
+- server_version
+- status
+- resolved_by
+- resolved_at
 
 ---
 
-sync_conflicts
+20. DEVICE REGISTRY
 
-id
+devices
 
-table_name
+Fields:
 
-record_id
+- id
+- name
+- type
+- registered_by
+- last_sync
+- status
 
-local_data
+Types:
 
-server_data
-
-resolved
-
-resolved_by
-
-resolved_at
-
-
----
-
-20. AUDIT SYSTEM
-
-
-
-audit_logs
-
-id
-
-user_id
-
-action
-
-table_name
-
-record_id
-
-old_data
-
-new_data
-
-created_at
-
+- Desktop
+- Laptop
+- Tablet
+- Mobile
 
 ---
 
-Actions:
-
-INSERT
-
-UPDATE
-
-DELETE
-
-LOGIN
-
-LOGOUT
-
-PAYMENT
-
-STOCK_ADJUSTMENT
-
-DISCHARGE
-
-CREATE_USER
-
-DISABLE_USER
-
-RESET_PASSWORD
-
-
----
-
-21. SECURITY MODEL
-
-
-
-Every Table:
-
-RLS Enabled
+21. SECURITY POLICY
 
 Default:
 
 DENY ALL
 
-Access Granted By Policy
+Requirements:
 
+- RLS Enabled
+- Role Protected
+- Audit Logged
 
----
+Every Table Must Have:
 
-22. INVENTORY RULES
+- created_at
+- updated_at
 
+Operational Tables Must Have:
 
-
-Stock Reduced Only When:
-
-payment_status = paid
-
-Using Database Transaction
-
-Must Prevent Race Condition
-
+- deleted_at
 
 ---
 
-23. SOFT DELETE
+22. GLOBAL STATUS BAR
 
+Always Visible
 
+States:
 
-deleted_at
+- ONLINE
+- OFFLINE
+- SYNCING
+- CONFLICT
 
-Required On:
+Show:
 
-users
-
-customers
-
-pets
-
-inventory_items
-
-No Hard Delete Operational Data
-
+- Last Sync Time
+- Pending Sync Count
 
 ---
 
-24. DASHBOARD METRICS
+23. PERFORMANCE TARGETS
 
+Dashboard:
+< 2 seconds
 
-
-Owner
-
-Revenue Today
-
-Revenue Month
-
-Total Patients
-
-Active Hospitalization
-
-
-Staff
-
-Waiting Queue
-
-Pending Payments
-
-
-Doctor
-
-Patients Today
-
-Follow Ups
-
-
-Customer
-
-Pets
-
-Appointments
-
-
-
----
-
-25. PWA REQUIREMENTS
-
-
-
-manifest.json
-
-service-worker.ts
-
-background-sync.ts
-
-offline-page
-
-offline-indicator
-
-install-prompt
-
-
----
-
-26. GLOBAL STATUS BAR
-
-
-
-Must Always Show:
-
-ONLINE
-
-OFFLINE
-
-SYNCING
-
-CONFLICT
-
-LAST SYNC TIME
-
-PENDING SYNC COUNT
-
-
----
-
-27. PERFORMANCE TARGETS
-
-
-
-Dashboard
-
-< 2 sec
-
-Customer Search
-
+Customer Search:
 < 100 ms
 
-Queue Load
-
+Queue Load:
 < 300 ms
 
-Medical Record Save
-
+Medical Record Save:
 < 500 ms
 
-POS Payment
-
+POS Payment:
 < 500 ms
 
-Sync Operation
-
-Background
-
+Background Sync:
+Non-blocking
 
 ---
 
-28. REPOSITORY STRUCTURE
-
-
+24. REPOSITORY STRUCTURE
 
 haland-petcare/
 
 src/
-
-app/
-
-components/
-
-modules/
-
-hooks/
-
-stores/
-
-services/
-
-database/
-
-sync/
-
-auth/
-
-reports/
-
-inventory/
-
-queue/
-
-medical-records/
-
-hospitalization/
-
-customers/
-
-pets/
-
-appointments/
-
-users/
-
-types/
-
-lib/
-
-supabase/
+├── app/
+├── components/
+├── modules/
+├── services/
+├── stores/
+├── hooks/
+├── database/
+├── sync/
+├── auth/
+├── inventory/
+├── queue/
+├── appointments/
+├── customers/
+├── pets/
+├── medical-records/
+├── hospitalization/
+├── reports/
+├── users/
+├── lib/
+├── types/
 
 public/
 
 docs/
-
-database-schema.md
-
-workflow.md
-
-sync-engine.md
-
-rls-policies.md
-
-api-contract.md
-
-BLUEPRINT.md
-
-README.md
-
+├── BLUEPRINT.md
+├── database-schema.md
+├── workflow.md
+├── sync-engine.md
+├── rls-policies.md
+├── api-contract.md
 
 ---
 
-29. DEPLOYMENT
+25. DEFINITION OF DONE
 
+Feature dianggap selesai hanya jika:
 
+✓ Validation
 
-Frontend
+✓ Loading State
 
-Vercel
+✓ Empty State
 
-Cloud Database
-
-Supabase
-
-Storage
-
-Supabase Storage
-
-Backup
-
-Daily
-
-Retention
-
-30 Days
-
-
----
-
-30. DEFINITION OF DONE
-
-
-
-A feature is complete only if:
-
-✓ Validation Exists
-
-✓ Loading State Exists
-
-✓ Empty State Exists
-
-✓ Error State Exists
+✓ Error State
 
 ✓ Audit Logged
 
@@ -1020,18 +737,36 @@ A feature is complete only if:
 
 ✓ Sync Supported
 
-✓ Responsive
-
 ✓ Role Protected
 
 ✓ RLS Protected
 
-✓ No Console Errors
-
-✓ No Data Loss
+✓ Responsive
 
 ✓ Tested Offline
 
 ✓ Tested Sync
 
+✓ No Console Error
+
+✓ No Data Loss
+
 ✓ Production Ready
+
+---
+
+26. ARCHITECTURAL DECISIONS
+
+Tidak diperbolehkan:
+
+- Direct Cloud CRUD
+- Cloud-Only Authentication
+- Hard Delete Operational Data
+- Internet Dependency
+- Bypass Audit Log
+- Bypass Role System
+- Bypass Sync Queue
+
+Semua perubahan arsitektur wajib memperbarui dokumen ini terlebih dahulu sebelum implementasi.
+
+Dokumen ini adalah sumber kebenaran mutlak (Single Source of Truth) untuk seluruh pengembangan Haland PetCare.
