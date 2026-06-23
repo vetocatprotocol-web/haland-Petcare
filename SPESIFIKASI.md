@@ -1080,24 +1080,7 @@ INSERT INTO public.inventory_items (name, category, unit, stock, min_stock, sell
 
 ---
 
-## 16. BATASAN SISTEM (HARD LIMITS)
-
-```
-❌ Tidak support multi-cabang
-❌ Tidak support multi-tenant
-❌ Tidak ada payment gateway (cash & transfer manual)
-❌ Tidak ada AI diagnosis
-❌ Tidak ada real-time collaboration antar device
-❌ Tidak ada SMS / WhatsApp notification
-❌ Tidak ada mobile app (web only, responsive)
-❌ Tidak ada microservices
-❌ Tidak ada advanced analytics / BI
-❌ Maksimal 1 dokter per antrian pasien
-```
-
----
-
-## 17. DEFINISI SELESAI (DEFINITION OF DONE)
+## 16. DEFINISI SELESAI (DEFINITION OF DONE)
 
 Setiap fitur dianggap selesai jika memenuhi semua kriteria ini:
 
